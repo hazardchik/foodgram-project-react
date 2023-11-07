@@ -15,9 +15,7 @@ services:
 
   backend:
     container_name: foodgram_backend
-    build:
-      context: ../backend/foodgram/
-      dockerfile: Dockerfile
+    image: hazardchik/foodgram_backend
     env_file: .env
     depends_on:
       - db
@@ -27,9 +25,7 @@ services:
 
   frontend:
     container_name: foodgram_frontend
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: hazardchik/foodgram_frontend
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
