@@ -104,10 +104,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).values(
             'ingredient__name', 'ingredient__measurement_unit'
         ).annotate(amount=Sum('amount'))
-        for num, ingredient in enumerate(ingredients):
+        for num, ingred in enumerate(ingredients):
             string += (
-                f'\n* {ingredient["ingredient__name"]} — {ingredient["amount"]} '
-                f'{ingredient["ingredient__measurement_unit"]}'
+                f'\n* {ingred["ingredient__name"]} — {ingred["amount"]} '
+                f'{ingred["ingredient__measurement_unit"]}'
             )
             if num < ingredients.count() - 1:
                 string += '; '
