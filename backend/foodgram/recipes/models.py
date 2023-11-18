@@ -1,7 +1,9 @@
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.db.models import UniqueConstraint
+
+from recipes import constants
 
 User = get_user_model()
 
@@ -17,15 +19,22 @@ class Ingredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
+        ordering = ("name",)
 
     def __str__(self):
         return self.name
 
 
 class Tags(models.Model):
-    name = models.CharField('Название', max_length=NAME_LIMIT, unique=True)
-    color = models.CharField('Цветовой HEX-код', unique=True, max_length=7)
-    slug = models.SlugField('Уникальный слаг', unique=True, max_length=200)
+    name = models.CharField(
+        'Название', max_length=constants.RECIPE_NAME_AND_TAGS, unique=True
+    )
+    color = models.CharField(
+        'Цветовой HEX-код', unique=True, max_length=constants.TAG_COLOR
+    )
+    slug = models.SlugField(
+        'Уникальный слаг', unique=True, max_length=constants.RECIPE_NAME_AND_TAGS
+    )
 
     class Meta:
         verbose_name = 'Тег'
@@ -52,8 +61,16 @@ class Recipes(models.Model):
     )
     text = models.TextField('Описание')
     cooking_time = models.PositiveSmallIntegerField(
-        'Время приготовления',
-        validators=[MinValueValidator(1, 'Минимальное время приготовления 1')]
+        "Время приготовления",
+        validators=[MinValueValidator(
+            constants.COOKING_TIME_MIN,
+            message="Время готовки должно быть не меньше чем 1 минута"
+        ), MaxValueValidator(
+            constants.COOKING_TIME_MAX,
+            message=f"Время готовки должно"
+                    f" быть меньше "
+                    f"чем {constants.COOKING_TIME_MAX} минут"
+        )]
     )
     ingredients = models.ManyToManyField(
         Ingredient,
@@ -87,12 +104,12 @@ class IngredientInRecipe(models.Model):
         on_delete=models.CASCADE
     )
     amount = models.PositiveSmallIntegerField(
-        'Количество',
-        validators=[MinValueValidator(1, 'Минимальное количество 1')]
+        "Количество ингредиента",
+        validators=[
+            MinValueValidator(constants.INGREDIENT_MIN_COUNT),
+            MaxValueValidator(constants.INGREDIENT_MAX_COUNT)
+        ],
     )
-
-    def __str__(self):
-        return f'{self.ingredient.name} {self.amount}'
 
     class Meta:
         verbose_name = 'Ингредиент в рецепте'
@@ -103,6 +120,9 @@ class IngredientInRecipe(models.Model):
                 name='recipe_ingredient_unique'
             )
         ]
+
+    def __str__(self):
+        return f'{self.ingredient.name} {self.amount}'
 
 
 class Favorite(models.Model):

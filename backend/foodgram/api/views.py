@@ -4,22 +4,22 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipes,
-                            ShopCart, Tags)
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
-from users.models import Follow
 
 from .filters import IngredientFilter, RecipeFilter
 from .mixins import ListRetrieve
 from .pagination import LimitPagination
 from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
 from .serializers import (FollowSerializer, IngredientSerializer,
-                          RecipeCreateSerializer, RecipeReadSerializer,
-                          RecipeShortSerializer, TagSerializer,
-                          UsersSerializer)
+                          SubscribeSerializer, RecipeCreateSerializer,
+                          RecipeReadSerializer, RecipeShortSerializer,
+                          TagSerializer, UsersSerializer)
+from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipes,
+                            ShopCart, Tags)
+from users.models import Follow
 
 User = get_user_model()
 
@@ -104,10 +104,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).values(
             'ingredient__name', 'ingredient__measurement_unit'
         ).annotate(amount=Sum('amount'))
-        for num, i in enumerate(ingredients):
+        for num, ingredient in enumerate(ingredients):
             string += (
-                f'\n* {i["ingredient__name"]} — {i["amount"]} '
-                f'{i["ingredient__measurement_unit"]}'
+                f'\n* {ingredient["ingredient__name"]} — {ingredient["amount"]} '
+                f'{ingredient["ingredient__measurement_unit"]}'
             )
             if num < ingredients.count() - 1:
                 string += '; '
@@ -124,44 +124,30 @@ class CustomUserViewSet(UserViewSet):
     serializer_class = UsersSerializer
     pagination_class = LimitPagination
 
-    @action(
+     @action(
+        methods=("post",),
         detail=True,
-        methods=['post', 'delete'],
-        permission_classes=[IsAuthenticated],
+        permission_classes=(IsAuthenticated,),
     )
-    def subscribe(self, request, **kwargs):
-        user = request.user
-        author_id = self.kwargs['id']
-        author = get_object_or_404(User, id=author_id)
+    def subscribe(self, request, id):
+        """Метод для создания подписки."""
+        data = {"user": request.user.id, "author": id}
+        serializer = SubscribeSerializer(
+            data=data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        if request.method == 'POST':
-            if user == author:
-                return Response({
-                    'errors': 'Вы не можете подписываться на самого себя'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            if Follow.objects.filter(user=user, author=author).exists():
-                return Response({
-                    'errors': 'Вы уже подписаны на данного пользователя'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            serializer = FollowSerializer(
-                author, data=request.data, context={'request': request}
-            )
-            serializer.is_valid(raise_exception=True)
-            Follow.objects.create(user=user, author=author)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        if request.method == 'DELETE':
-            if user == author:
-                return Response({
-                    'errors': 'Вы не можете отписываться от самого себя'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            follow = Follow.objects.filter(user=user, author=author)
-            if follow.exists():
-                follow.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            return Response({
-                'errors': 'Вы уже отписались'
-            }, status=status.HTTP_400_BAD_REQUEST)
+    @subscribe.mapping.delete
+    def delete_subscribe(self, request, id):
+        subscription = Follow.objects.filter(
+            user=request.user, author_id=id
+        )
+        if subscription.exists():
+            subscription.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, permission_classes=[IsAuthenticated])
     def subscriptions(self, request):

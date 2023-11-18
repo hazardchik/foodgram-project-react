@@ -5,9 +5,9 @@ from .models import (Favorite, Ingredient, IngredientInRecipe, Recipes,
                      ShopCart, Tags)
 
 
-class RecipeIngredintInline(admin.TabularInline):
+class RecipeIngredintInline(admin.StackedInline):
     model = IngredientInRecipe
-    extra = 1
+    autocomplete_fields = ('ingredient',)
 
 
 @admin.register(Ingredient)
