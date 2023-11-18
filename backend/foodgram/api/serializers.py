@@ -2,21 +2,18 @@ from http import HTTPStatus
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from djoser.serializers import (
-    UserCreateSerializer as DjoserUserCreateSerializer
-)
+from djoser.serializers import UserCreateSerializer as DjoserUCreateSerializer
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
+from recipes import constants
+from recipes.models import Ingredient, IngredientInRecipe, Recipes, Tags
 from rest_framework import serializers
 from rest_framework.fields import IntegerField, SerializerMethodField
 from rest_framework.relations import PrimaryKeyRelatedField
-
-from recipes import constants
-from recipes.models import Ingredient, IngredientInRecipe, Recipes, Tags
 from users.models import Follow, User
 
 
-class UserCreateSerializer(DjoserUserCreateSerializer):
+class UserCreateSerializer(DjoserUCreateSerializer):
 
     class Meta:
         model = User

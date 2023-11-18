@@ -1,8 +1,7 @@
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import UniqueConstraint
-
 from recipes import constants
 
 User = get_user_model()
@@ -33,7 +32,7 @@ class Tags(models.Model):
         'Цветовой HEX-код', unique=True, max_length=constants.TAG_COLOR
     )
     slug = models.SlugField(
-        'Уникальный слаг', unique=True, max_length=constants.RECIPE_NAME_AND_TAGS
+        'Слаг', unique=True, max_length=constants.RECIPE_NAME_AND_TAGS
     )
 
     class Meta:

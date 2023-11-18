@@ -4,22 +4,22 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
+from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipes,
+                            ShopCart, Tags)
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
+from users.models import Follow
 
 from .filters import IngredientFilter, RecipeFilter
 from .mixins import ListRetrieve
 from .pagination import LimitPagination
 from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
 from .serializers import (FollowSerializer, IngredientSerializer,
-                          SubscribeSerializer, RecipeCreateSerializer,
-                          RecipeReadSerializer, RecipeShortSerializer,
+                          RecipeCreateSerializer, RecipeReadSerializer,
+                          RecipeShortSerializer, SubscribeSerializer,
                           TagSerializer, UsersSerializer)
-from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipes,
-                            ShopCart, Tags)
-from users.models import Follow
 
 User = get_user_model()
 
@@ -124,7 +124,7 @@ class CustomUserViewSet(UserViewSet):
     serializer_class = UsersSerializer
     pagination_class = LimitPagination
 
-     @action(
+    @action(
         methods=("post",),
         detail=True,
         permission_classes=(IsAuthenticated,),
