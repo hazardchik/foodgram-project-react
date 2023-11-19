@@ -2,9 +2,9 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import UniqueConstraint
-from recipes import constants
 
-User = get_user_model()
+from recipes import constants
+from users.models import User
 
 NAME_LIMIT = 150
 

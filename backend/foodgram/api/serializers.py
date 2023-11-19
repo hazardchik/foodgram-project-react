@@ -5,11 +5,12 @@ from django.db import transaction
 from djoser.serializers import UserCreateSerializer as DjoserUCreateSerializer
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
-from recipes import constants
-from recipes.models import Ingredient, IngredientInRecipe, Recipes, Tags
 from rest_framework import serializers
 from rest_framework.fields import IntegerField, SerializerMethodField
 from rest_framework.relations import PrimaryKeyRelatedField
+
+from recipes import constants
+from recipes.models import Ingredient, IngredientInRecipe, Recipes, Tags
 from users.models import Follow, User
 
 
@@ -29,9 +30,9 @@ class UsersSerializer(DjoserUserSerializer):
                   'last_name', 'is_subscribed',)
 
     def get_is_subscribed(self, obj):
-        request = self.context.get("request")
-        return (request.user.is_authenticated
-                and request.user.follower.filter(author=obj).exists())
+        user = self.context.get('request').user
+        return (user.is_authenticated
+                and user.follower.filter(author=obj).exists())
 
 
 class SubscribeSerializer(serializers.ModelSerializer):
@@ -40,21 +41,21 @@ class SubscribeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
         fields = (
-            "author",
-            "user",
+            'author',
+            'user',
         )
 
     def validate(self, data):
-        user = data.get("user")
-        author = data.get("author")
+        user = data.get('user')
+        author = data.get('author')
 
-        if Follow.objects.filter(user=user, author=author).exists():
+        if user.follower.filter(author=author).exists():
             raise ValidationError(
-                "Вы уже подписаны на этого автора"
+                'Вы уже подписаны на этого автора'
             )
         if user == author:
             raise ValidationError(
-                "Подписаться на самого себя невозможно",
+                'Подписаться на самого себя невозможно',
                 code=HTTPStatus.BAD_REQUEST,
             )
         return data
@@ -102,14 +103,14 @@ class RecipeReadSerializer(serializers.ModelSerializer):
                   'name', 'text', 'cooking_time',)
 
     def get_is_favorited(self, obj):
-        request = self.context.get("request")
-        return (request.user.is_authenticated
-                and obj.favorite.filter(user=request.user).exists())
+        user = self.context["request"].user
+        return (user.is_authenticated
+                and obj.favorite.filter(user=user).exists())
 
     def get_is_in_shopping_cart(self, obj):
-        request = self.context.get("request")
-        return (request.user.is_authenticated
-                and obj.shop.filter(user=request.user).exists())
+        user = self.context["request"].user
+        return (user.is_authenticated
+                and obj.shop.filter(user=user).exists())
 
 
 class IngredientInRecipeCreateSerializer(serializers.ModelSerializer):
@@ -118,8 +119,8 @@ class IngredientInRecipeCreateSerializer(serializers.ModelSerializer):
         min_value=constants.INGREDIENT_MIN_COUNT,
         max_value=constants.INGREDIENT_MAX_COUNT,
         error_messages={
-            "min_value": "Должно быть не меньше 1.",
-            "max_value": "Превышено максимальное количество."
+            'min_value': 'Должно быть не меньше 1.',
+            'max_value': 'Превышено максимальное количество.'
         }
     )
 
@@ -146,14 +147,14 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     def validate(self, data):
         ingredients = self.initial_data.get('ingredients')
         tags = self.initial_data.get('tags')
-        ingredient_list = {ingredient["id"] for ingredient in ingredients}
+        ingredient_list = {ingredient['id'] for ingredient in ingredients}
         if len(ingredient_list) != len(ingredients):
             raise serializers.ValidationError(
-                {'ingredients': "Ингредиенты не должны повторяться."}
+                {'ingredients': 'Ингредиенты не должны повторяться.'}
             )
         if not ingredients:
             raise serializers.ValidationError(
-                {"ingredients": "Нужно выбрать хотя бы один ингредиент!"}
+                {'ingredients': 'Нужно выбрать хотя бы один ингредиент!'}
             )
         if not tags:
             raise serializers.ValidationError(
@@ -216,8 +217,7 @@ class FollowSerializer(UsersSerializer):
         read_only_fields = UsersSerializer.Meta.fields
 
     def get_recipes(self, obj):
-        request = self.context.get('request')
-        limit = request.GET.get('recipes_limit')
+        limit = self.context.get("request").GET.get("recipes_limit")
         queryset = obj.recipe.all()
         if limit:
             queryset = queryset[:int(limit)]
