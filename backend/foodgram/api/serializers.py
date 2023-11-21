@@ -160,7 +160,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 {'tags': 'Нужно выбрать хотя бы один тег!'})
         return data
 
-     def create_ingredients(self, ingredients, recipe):
+    def create_ingredients(self, ingredients, recipe):
         for ingredient in ingredients:
             IngredientInRecipe.objects.create(
                 recipe=recipe,
